@@ -54,6 +54,14 @@ export class OrderService {
         return this.getAnnotatedOtps().map(otps => otps.filter(otp => otp.data.Equipe===equipeId));
     }
     
+    getAnnotatedOtpById(otpId) : Observable<any>
+    {
+        return this.getAnnotatedOtps().map(otps =>
+        {
+            let otpFiltered= otps.filter(otp => otp.data._id === otpId);
+            return otpFiltered.length === 0 ? null : otpFiltered[0];
+        }); 
+    }
 
     // orders
     // ======
@@ -69,11 +77,12 @@ export class OrderService {
         return orders.length === 0 ? 0 : orders.map(order => this.getTotalOfOrder(order)).reduce((a, b) => a + b);
     }
 
-    private createAnnotedOrder(order, products, otps, users, equipes, suppliers) {
+    private createAnnotedOrder(order, products, otps, users, equipes, suppliers, dashlets: any[]) {
         if (!order) return null;
         let supplier = suppliers.filter(supplier => supplier._id === order.supplierId)[0];
         let equipe = equipes.filter(equipe => equipe._id === order.equipeId)[0];
         let user = users.filter(user => user._id === order.userId)[0];
+        let dashlet= dashlets.filter(dashlet => dashlet.id === order._id);
         return {
             data: order,
             annotation: {
@@ -81,6 +90,7 @@ export class OrderService {
                 supplier: supplier ? supplier.Nom : 'Unknown supllier',
                 equipe: equipe ? equipe.Name : 'Unknown equipe',
                 total: this.getTotalOfOrder(order),
+                dashletId:  dashlet.length > 0 ? dashlet[0]._id : undefined ,
                 items: order.items.map(item => {
                     let product = products.filter(product => product._id === item.product)[0];
                     let otp = otps.filter(otp => otp._id === item.otp)[0];
@@ -108,8 +118,9 @@ export class OrderService {
             this.dataStore.getDataObservable('krinousers'),
             this.dataStore.getDataObservable('equipes'),
             this.dataStore.getDataObservable('Suppliers'),
-            (order, products, otps, users, equipes, suppliers) => {
-                return this.createAnnotedOrder(order, products, otps, users, equipes, suppliers);
+            this.userService.getOrderDashletsForCurrentUser(),
+            (order, products, otps, users, equipes, suppliers, dashlets) => {
+                return this.createAnnotedOrder(order, products, otps, users, equipes, suppliers, dashlets);
             })
     }
 
@@ -121,9 +132,10 @@ export class OrderService {
             this.dataStore.getDataObservable('krinousers'),
             this.dataStore.getDataObservable('equipes'),
             this.dataStore.getDataObservable('Suppliers'),
-            (orders, products, otps, users, equipes, suppliers) => {
+            this.userService.getOrderDashletsForCurrentUser(),
+            (orders, products, otps, users, equipes, suppliers, dashlets) => {
                 return orders.map(order =>
-                    this.createAnnotedOrder(order, products, otps, users, equipes, suppliers)
+                    this.createAnnotedOrder(order, products, otps, users, equipes, suppliers, dashlets)
                 );
             })
     }
@@ -153,13 +165,14 @@ export class OrderService {
     // equipes
     // =======
 
-    private createAnnotatedEquipe(equipe, orders: any[], otps: any[]) {
+    private createAnnotatedEquipe(equipe, orders: any[], otps: any[], dashlets: any[]) {
         if (!equipe) return null;
 
         let ordersFiltered = orders.filter(order => order.equipeId === equipe._id);
         let otpsFiltered= otps.filter(otp => otp.Equipe === equipe._id);
         let budget= otpsFiltered && otpsFiltered.length > 0 ? otpsFiltered.map(otp => +otp.Budget).reduce((a, b) => a + b) : 0;
         let amountSpent= this.getTotalOfOrders(ordersFiltered);
+        let dashlet= dashlets.filter(dashlet => dashlet.id === equipe._id);
 
         return {
             data: equipe,
@@ -167,7 +180,8 @@ export class OrderService {
             {
                 amountSpent: amountSpent,
                 budget: budget,
-                amountAvailable: budget - amountSpent
+                amountAvailable: budget - amountSpent,
+                dashletId:  dashlet.length > 0 ? dashlet[0]._id : undefined 
             }
         };
     }
@@ -177,8 +191,19 @@ export class OrderService {
             this.dataStore.getDataObservable('equipes'),
             this.dataStore.getDataObservable('orders'),
             this.dataStore.getDataObservable('otps'),
-            (equipes, orders, otps) => {
-                return equipes.map(equipe => this.createAnnotatedEquipe(equipe, orders, otps))
+            this.userService.getEquipeDashletsForCurrentUser(),
+            (equipes, orders, otps, dashlets) => {
+                return equipes.map(equipe => this.createAnnotatedEquipe(equipe, orders, otps, dashlets))
             });
     }
+
+    getAnnotatedEquipeById(equipeId) : Observable<any>
+    {
+        return this.getAnnotatedEquipes().map(equipes =>
+        {
+            let equipesFiltered= equipes.filter(equipe => equipe.data._id === equipeId);
+            return equipesFiltered.length === 0 ? null : equipesFiltered[0];
+        }); 
+    }
+    
 }

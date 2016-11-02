@@ -1,6 +1,6 @@
 import { NgModule }      from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule }   from '@angular/forms';
+import { FormsModule, ReactiveFormsModule  }   from '@angular/forms';
 import { RouterModule }   from '@angular/router';
 import { HttpModule} from '@angular/http';
 import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
@@ -12,6 +12,7 @@ import {SupplierListComponent} from './Suppliers/supplier-list.component';
 import {SupplierDetailComponent} from './Suppliers/supplier-detail.component';
 import {ProductComponent} from './Products/product.component';
 import {ProductListComponent} from './Products/product-list.component';
+import {ProductEnterComponent} from './Products/product-enter.component'
 
 import {CategoryListComponent} from './Categories/category-list.component'
 
@@ -28,10 +29,15 @@ import {PreOrderComponent} from './Orders/pre-order.component'
 import {OrderDetailComponent, OrderComponentRoutable} from './Orders/order-detail.component'
 import {OrderListComponent, OrderListComponentRoutable} from './Orders/order-list.component'
 
+import {DashboardComponent} from './Dashboard/dashboard.component'
+import {DashletComponent} from './Dashboard/dashlet.component'
+
 import {Editor} from './ui/editor/editor'
 import {EditorNumber} from './ui/editor/editor-number'
 import {Checkbox} from './ui/checkbox/checkbox'
 import {SelectorComponent} from './ui/selector/selector.component'
+import {CommentComponent} from './Comments/comment.component'
+import {CommentsComponent} from './Comments/comments.component'
 
 import {ApiService} from './Shared/Services/api.service';
 import {ProductService} from './Shared/Services/product.service'
@@ -42,10 +48,13 @@ import {AuthService} from './Shared/Services/auth.service'
 import {OtpChoiceService} from './Shared/Services/otp-choice.service'
 import {UserService} from './Shared/Services/user.service'
 
+import {MomentModule} from 'angular2-moment';
+
 @NgModule({
   imports:      [ 
+          MomentModule,
           BrowserModule, 
-          FormsModule,  
+          FormsModule, ReactiveFormsModule,
           HttpModule,
           NgbModule.forRoot(),
           RouterModule.forRoot([
@@ -54,6 +63,7 @@ import {UserService} from './Shared/Services/user.service'
             { path: "orders", component: OrderListComponentRoutable},
             { path: "categories", component: CategoryListComponent},
             { path: "otps", component: OtpListComponentRoutable},
+            { path: "dashboard", component: DashboardComponent},
             { path: "home", component: HomeComponent},
             { path: "", component: HomeComponent, pathMatch: 'full'},
             { path: 'preorder/:id', component: PreOrderComponent },
@@ -61,9 +71,11 @@ import {UserService} from './Shared/Services/user.service'
           ])
    ],
   declarations: [ AppComponent, HomeComponent, 
-                  SupplierListComponent, SupplierDetailComponent, ProductComponent, ProductListComponent,
+                  CommentComponent, CommentsComponent,
+                  SupplierListComponent, SupplierDetailComponent, ProductComponent, ProductListComponent, ProductEnterComponent,
                   OtpComponent, OtpListComponent, OtpDetailComponent, OtpListComponentRoutable,
                   CategoryListComponent,
+                  DashboardComponent, DashletComponent,
                   UserComponent, UserListComponent, 
                   EquipeDetailComponent, EquipeListComponent, 
                   PreOrderComponent, OrderDetailComponent, OrderComponentRoutable,

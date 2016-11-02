@@ -20,6 +20,8 @@ var OtpDetailComponent = (function () {
         this.productService = productService;
         this.orderService = orderService;
         this.userService = userService;
+        /*      this.otpComments=[{user: {fullName:'Alexis Dali'}, time:new Date(), content:'This is my first comment' },
+                  {user: {fullName:'Alex Kvasz'}, time:new Date(), content:'This is my second comment' }];*/
     }
     OtpDetailComponent.prototype.ngOnInit = function () {
         var _this = this;
@@ -27,8 +29,10 @@ var OtpDetailComponent = (function () {
         this.selectedCategoryIdsObservable = this.otpObservable.map(function (otp) { return otp.data.Categorie; });
         this.otpObservable.subscribe(function (otp) {
             _this.otp = otp;
-            _this.ordersObservable = _this.orderService.getAnnotedOrdersByOtp(otp.data._id);
-            _this.ordersObservable.subscribe(function (orders) { return _this.anyOrder = orders && orders.length > 0; });
+            if (otp) {
+                _this.ordersObservable = _this.orderService.getAnnotedOrdersByOtp(otp.data._id);
+                _this.ordersObservable.subscribe(function (orders) { return _this.anyOrder = orders && orders.length > 0; });
+            }
         });
     };
     OtpDetailComponent.prototype.categorySelectionChanged = function (selectedIds) {
@@ -38,13 +42,17 @@ var OtpDetailComponent = (function () {
     OtpDetailComponent.prototype.categoryHasBeenAdded = function (newCategory) {
         this.productService.createCategory(newCategory);
     };
-    OtpDetailComponent.prototype.setDashlet = function (isChecked, dashletId) {
-        if (isChecked) {
-            this.userService.createOtpDashletForCurrentUser(this.otp.data._id);
-        }
-        else {
-            if (dashletId)
-                this.userService.removeDashletForCurrentUser(dashletId);
+    OtpDetailComponent.prototype.setDashlet = function () {
+        this.userService.createOtpDashletForCurrentUser(this.otp.data._id);
+    };
+    OtpDetailComponent.prototype.removeDashlet = function (dashletId) {
+        if (dashletId)
+            this.userService.removeDashletForCurrentUser(dashletId);
+    };
+    OtpDetailComponent.prototype.commentsUpdated = function (comments) {
+        if (this.otp && comments) {
+            this.otp.data.comments = comments;
+            this.dataStore.updateData('otps', this.otp.data._id, this.otp.data);
         }
     };
     __decorate([

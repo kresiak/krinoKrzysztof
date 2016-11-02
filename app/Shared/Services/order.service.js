@@ -59,6 +59,12 @@ var OrderService = (function () {
     OrderService.prototype.getAnnotatedOtpsByEquipe = function (equipeId) {
         return this.getAnnotatedOtps().map(function (otps) { return otps.filter(function (otp) { return otp.data.Equipe === equipeId; }); });
     };
+    OrderService.prototype.getAnnotatedOtpById = function (otpId) {
+        return this.getAnnotatedOtps().map(function (otps) {
+            var otpFiltered = otps.filter(function (otp) { return otp.data._id === otpId; });
+            return otpFiltered.length === 0 ? null : otpFiltered[0];
+        });
+    };
     // orders
     // ======
     // order helper functions for viewing orders
@@ -70,12 +76,13 @@ var OrderService = (function () {
         var _this = this;
         return orders.length === 0 ? 0 : orders.map(function (order) { return _this.getTotalOfOrder(order); }).reduce(function (a, b) { return a + b; });
     };
-    OrderService.prototype.createAnnotedOrder = function (order, products, otps, users, equipes, suppliers) {
+    OrderService.prototype.createAnnotedOrder = function (order, products, otps, users, equipes, suppliers, dashlets) {
         if (!order)
             return null;
         var supplier = suppliers.filter(function (supplier) { return supplier._id === order.supplierId; })[0];
         var equipe = equipes.filter(function (equipe) { return equipe._id === order.equipeId; })[0];
         var user = users.filter(function (user) { return user._id === order.userId; })[0];
+        var dashlet = dashlets.filter(function (dashlet) { return dashlet.id === order._id; });
         return {
             data: order,
             annotation: {
@@ -83,6 +90,7 @@ var OrderService = (function () {
                 supplier: supplier ? supplier.Nom : 'Unknown supllier',
                 equipe: equipe ? equipe.Name : 'Unknown equipe',
                 total: this.getTotalOfOrder(order),
+                dashletId: dashlet.length > 0 ? dashlet[0]._id : undefined,
                 items: order.items.map(function (item) {
                     var product = products.filter(function (product) { return product._id === item.product; })[0];
                     var otp = otps.filter(function (otp) { return otp._id === item.otp; })[0];
@@ -102,15 +110,15 @@ var OrderService = (function () {
     // ==============
     OrderService.prototype.getAnnotedOrder = function (id) {
         var _this = this;
-        return Rx_1.Observable.combineLatest(this.dataStore.getDataObservable('orders').map(function (orders) { return orders.filter(function (order) { return order._id === id; })[0]; }), this.dataStore.getDataObservable('Produits'), this.dataStore.getDataObservable('otps'), this.dataStore.getDataObservable('krinousers'), this.dataStore.getDataObservable('equipes'), this.dataStore.getDataObservable('Suppliers'), function (order, products, otps, users, equipes, suppliers) {
-            return _this.createAnnotedOrder(order, products, otps, users, equipes, suppliers);
+        return Rx_1.Observable.combineLatest(this.dataStore.getDataObservable('orders').map(function (orders) { return orders.filter(function (order) { return order._id === id; })[0]; }), this.dataStore.getDataObservable('Produits'), this.dataStore.getDataObservable('otps'), this.dataStore.getDataObservable('krinousers'), this.dataStore.getDataObservable('equipes'), this.dataStore.getDataObservable('Suppliers'), this.userService.getOrderDashletsForCurrentUser(), function (order, products, otps, users, equipes, suppliers, dashlets) {
+            return _this.createAnnotedOrder(order, products, otps, users, equipes, suppliers, dashlets);
         });
     };
     OrderService.prototype.getAnnotedOrders = function () {
         var _this = this;
-        return Rx_1.Observable.combineLatest(this.dataStore.getDataObservable('orders'), this.dataStore.getDataObservable('Produits'), this.dataStore.getDataObservable('otps'), this.dataStore.getDataObservable('krinousers'), this.dataStore.getDataObservable('equipes'), this.dataStore.getDataObservable('Suppliers'), function (orders, products, otps, users, equipes, suppliers) {
+        return Rx_1.Observable.combineLatest(this.dataStore.getDataObservable('orders'), this.dataStore.getDataObservable('Produits'), this.dataStore.getDataObservable('otps'), this.dataStore.getDataObservable('krinousers'), this.dataStore.getDataObservable('equipes'), this.dataStore.getDataObservable('Suppliers'), this.userService.getOrderDashletsForCurrentUser(), function (orders, products, otps, users, equipes, suppliers, dashlets) {
             return orders.map(function (order) {
-                return _this.createAnnotedOrder(order, products, otps, users, equipes, suppliers);
+                return _this.createAnnotedOrder(order, products, otps, users, equipes, suppliers, dashlets);
             });
         });
     };
@@ -130,26 +138,34 @@ var OrderService = (function () {
     };
     // equipes
     // =======
-    OrderService.prototype.createAnnotatedEquipe = function (equipe, orders, otps) {
+    OrderService.prototype.createAnnotatedEquipe = function (equipe, orders, otps, dashlets) {
         if (!equipe)
             return null;
         var ordersFiltered = orders.filter(function (order) { return order.equipeId === equipe._id; });
         var otpsFiltered = otps.filter(function (otp) { return otp.Equipe === equipe._id; });
         var budget = otpsFiltered && otpsFiltered.length > 0 ? otpsFiltered.map(function (otp) { return +otp.Budget; }).reduce(function (a, b) { return a + b; }) : 0;
         var amountSpent = this.getTotalOfOrders(ordersFiltered);
+        var dashlet = dashlets.filter(function (dashlet) { return dashlet.id === equipe._id; });
         return {
             data: equipe,
             annotation: {
                 amountSpent: amountSpent,
                 budget: budget,
-                amountAvailable: budget - amountSpent
+                amountAvailable: budget - amountSpent,
+                dashletId: dashlet.length > 0 ? dashlet[0]._id : undefined
             }
         };
     };
     OrderService.prototype.getAnnotatedEquipes = function () {
         var _this = this;
-        return Rx_1.Observable.combineLatest(this.dataStore.getDataObservable('equipes'), this.dataStore.getDataObservable('orders'), this.dataStore.getDataObservable('otps'), function (equipes, orders, otps) {
-            return equipes.map(function (equipe) { return _this.createAnnotatedEquipe(equipe, orders, otps); });
+        return Rx_1.Observable.combineLatest(this.dataStore.getDataObservable('equipes'), this.dataStore.getDataObservable('orders'), this.dataStore.getDataObservable('otps'), this.userService.getEquipeDashletsForCurrentUser(), function (equipes, orders, otps, dashlets) {
+            return equipes.map(function (equipe) { return _this.createAnnotatedEquipe(equipe, orders, otps, dashlets); });
+        });
+    };
+    OrderService.prototype.getAnnotatedEquipeById = function (equipeId) {
+        return this.getAnnotatedEquipes().map(function (equipes) {
+            var equipesFiltered = equipes.filter(function (equipe) { return equipe.data._id === equipeId; });
+            return equipesFiltered.length === 0 ? null : equipesFiltered[0];
         });
     };
     OrderService = __decorate([
