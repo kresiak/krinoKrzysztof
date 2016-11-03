@@ -128,6 +128,11 @@ var OrderService = (function () {
     OrderService.prototype.getAnnotedOrdersByEquipe = function (equipeId) {
         return this.getAnnotedOrders().map(function (orders) { return orders.filter(function (order) { return order.data.equipeId === equipeId; }); });
     };
+    OrderService.prototype.getAnnotedOrdersOfCurrentUser = function () {
+        return Rx_1.Observable.combineLatest(this.getAnnotedOrders(), this.authService.getUserIdObservable(), function (orders, userId) {
+            return orders.filter(function (order) { return order.data.userId === userId; });
+        });
+    };
     OrderService.prototype.getAnnotedOrdersByOtp = function (otpId) {
         return this.getAnnotedOrders().map(function (orders) { return orders.filter(function (order) { return order.data.items.map(function (item) { return item.otp; }).includes(otpId); }); });
     };
@@ -166,6 +171,13 @@ var OrderService = (function () {
         return this.getAnnotatedEquipes().map(function (equipes) {
             var equipesFiltered = equipes.filter(function (equipe) { return equipe.data._id === equipeId; });
             return equipesFiltered.length === 0 ? null : equipesFiltered[0];
+        });
+    };
+    OrderService.prototype.getAnnotatedEquipesOfCurrentUser = function () {
+        return Rx_1.Observable.combineLatest(this.getAnnotatedEquipes(), this.authService.getUserIdObservable(), function (equipes, userId) {
+            return equipes.filter(function (equipe) {
+                return equipe.data.Users.includes(userId);
+            });
         });
     };
     OrderService = __decorate([

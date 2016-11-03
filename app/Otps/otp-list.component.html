@@ -1,9 +1,18 @@
+<template #searchPopContent>
+    <ul>
+        <li>nadi: commandes dont l'équipe, le fournisseur ou l'utilisateur contient 'nadi'</li>
+        <li>$>200: montants supérieurs à 200 euros</li>
+        <li>$<50: montants inférieurs à 200 euros</li>
+        <li>#enzym: commande avec un produit contenant 'enzym'</li>
+    </ul>
+</template>
+
 <div class="card">
 	<div class="card-block">
 
 		<div class="row">
 			<div [formGroup]="searchForm">
-				<input type="search" [formControl]="searchControl" formControlName="searchControl">
+				<input type="search" [formControl]="searchControl" formControlName="searchControl" [ngbPopover]="searchPopContent" placement="right" triggers="mouseenter:mouseleave" popoverTitle="How to search: examples">
 			</div>
 		</div>
 		<div class="row">
@@ -14,10 +23,10 @@
 							<div class="col-sm-3"><b>Otp</b></div>
 							<div class="col-sm-3" *ngIf="showColumn('equipe')"><b>Equipe</b></div>
 							<div class="col-sm-2"><b>Available</b></div>
+							<div class="col-sm-2"><b>Spent</b></div>
 						</div>
 					</template>
 					<template ngbPanelContent>
-
 					</template>
 				</ngb-panel>
 				<ngb-panel *ngFor="let otp of otps">
@@ -26,6 +35,7 @@
 							<div class="col-sm-3">{{otp.data.Name}}</div>
 							<div class="col-sm-3" *ngIf="showColumn('equipe')">{{otp.annotation.equipe}}</div>
 							<div class="col-sm-2">{{otp.annotation.amountAvailable | currency:'EUR':true:'1.2-2'}}</div>
+							<div class="col-sm-2">{{otp.annotation.amountSpent | currency:'EUR':true:'1.2-2'}}</div>
 						</div>
 					</template>
 					<template ngbPanelContent>
